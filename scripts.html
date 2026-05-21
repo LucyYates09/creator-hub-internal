@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JobWizard Creator Scripts</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#f9fafb;color:#111;min-height:100vh}
+.hdr{background:#000;color:#fff;padding:18px 32px;
+  display:flex;align-items:center;justify-content:space-between}
+.hdr-left .hdr-title{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.hdr-left .hdr-sub{font-size:12px;color:#888;margin-top:3px}
+.hdr-right{display:flex;align-items:center;gap:16px}
+.nav-link{font-size:13px;color:#60a5fa;text-decoration:none;font-weight:500}
+.nav-link:hover{color:#93c5fd}
+.hdr-badge{background:#fff;color:#000;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px}
+.hero{background:#fff;border-bottom:1px solid #e5e7eb;padding:32px}
+.hero h1{font-size:24px;font-weight:800;margin-bottom:8px}
+.hero p{font-size:14px;color:#6b7280;max-width:520px;line-height:1.6}
+.filter-bar{background:#fff;border-bottom:1px solid #e5e7eb;
+  padding:14px 32px;display:flex;flex-wrap:wrap;gap:8px}
+.fchip{padding:6px 14px;border:1px solid #e5e7eb;border-radius:20px;
+  background:#fff;font-size:12px;font-weight:500;cursor:pointer;
+  color:#374151;transition:all .15s;white-space:nowrap}
+.fchip.active{background:#111;color:#fff;border-color:#111}
+.fchip:hover:not(.active){background:#f3f4f6}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:20px;padding:32px}
+.scard{background:#fff;border-radius:14px;padding:22px;cursor:pointer;
+  transition:all .2s;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:10px}
+.scard:hover{box-shadow:0 8px 24px rgba(0,0,0,.09);transform:translateY(-2px);border-color:#2563eb}
+.scard-meta{display:flex;justify-content:space-between;align-items:center}
+.scard-date{font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:6px}
+.scard-dur{background:#f3f4f6;color:#6b7280;font-size:10px;padding:1px 5px;border-radius:4px;font-weight:600}
+.scard-ref{font-size:12px;color:#2563eb;text-decoration:none;font-weight:500}
+.scard-ref:hover{text-decoration:underline}
+.scard-title{font-size:15px;font-weight:700;color:#111;line-height:1.3}
+.scard-num{font-size:11px;font-weight:700;color:#9ca3af;margin-right:4px;letter-spacing:.3px}
+.scard-music{font-size:12px;color:#7c3aed;text-decoration:none;display:block}
+.scard-music:hover{text-decoration:underline}
+.scard-tags{display:flex;flex-wrap:wrap;gap:5px;margin:-2px 0 2px}
+.chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.scard-hook{font-size:13px;color:#374151;line-height:1.55;flex:1;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.scard-cta{font-size:13px;color:#2563eb;font-weight:600}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;width:90vw;max-width:1200px;
+  min-width:400px;height:88vh;min-height:300px;display:flex;flex-direction:column;
+  overflow:hidden;resize:both;box-shadow:0 24px 60px rgba(0,0,0,.18)}
+.modal-hdr{padding:20px 28px;border-bottom:1px solid #e5e7eb;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-ref{font-size:13px;color:#2563eb;text-decoration:none}
+.modal-ref:hover{text-decoration:underline}
+.modal-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+.copy-btn{padding:8px 18px;background:#2563eb;color:#fff;border:none;
+  border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}
+.copy-btn:hover{background:#1d4ed8}
+.close-btn{padding:8px 12px;background:#f3f4f6;border:none;
+  border-radius:8px;font-size:15px;cursor:pointer;color:#6b7280}
+.close-btn:hover{background:#e5e7eb}
+.edit-btn{padding:8px 16px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;
+  border-radius:8px;font-size:13px;cursor:pointer;font-weight:500}
+.edit-btn:hover{background:#e5e7eb}
+.save-btn{padding:8px 16px;background:#16a34a;color:#fff;border:none;
+  border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:none}
+.save-btn:hover{background:#15803d}
+.reset-lnk{font-size:12px;color:#9ca3af;cursor:pointer;text-decoration:underline;display:none;align-self:center}
+.reset-lnk:hover{color:#6b7280}
+.modal-body{padding:28px 32px;overflow-y:auto;flex:1}
+.md-editing{border:2px solid #3b82f6!important;border-radius:8px;
+  padding:12px 16px;outline:none;cursor:text;min-height:200px}
+.md h2{font-size:15px;font-weight:700;margin:20px 0 8px;
+  padding-bottom:5px;border-bottom:1px solid #f0f0f0}
+.md h2:first-child{margin-top:0}
+.md h3{font-size:14px;font-weight:600;margin:14px 0 6px;color:#374151}
+.md p{font-size:14px;line-height:1.75;margin-bottom:8px;color:#374151}
+.md ul,.md ol{font-size:14px;padding-left:20px;margin-bottom:8px;line-height:1.75}
+.md li{margin-bottom:3px}
+.md strong{color:#111}
+.md table{width:100%;border-collapse:collapse;margin:12px 0;
+  font-size:13px;display:block;overflow-x:auto}
+.md th{background:#f5f5f7;padding:8px 14px;border:1px solid #e5e5e5;
+  font-weight:600;text-align:left;white-space:nowrap}
+.md td{padding:8px 14px;border:1px solid #e5e5e5;vertical-align:top;line-height:1.5}
+.md tr:nth-child(even){background:#fafafa}
+.md hr{border:none;border-top:1px solid #e5e5e5;margin:18px 0}
+.empty{text-align:center;padding:80px;color:#9ca3af;font-size:16px}
+@media(max-width:480px){
+  .hdr,.hero,.filter-bar{padding:16px}
+  .grid{padding:16px;grid-template-columns:1fr}
+  .modal-body{padding:16px}
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">JobWizard Creator Scripts</div>
+    <div class="hdr-sub">Ready-to-film TikTok scripts</div>
+  </div>
+  <div class="hdr-right">
+    <a href="scripts_zh.html" class="nav-link">中文版</a>
+    <a href="index.html" class="nav-link">← Internal Analysis</a>
+    <span class="hdr-badge">5</span>
+  </div>
+</header>
+<div class="hero">
+  <h1>Ready-to-Film Scripts</h1>
+  <p>Each script is derived from a viral video breakdown. Click a card to read the full script, then copy and start filming.</p>
+</div>
+<div class="filter-bar"><button class="fchip active" onclick="filt('all',this)">All</button><button class="fchip" onclick="filt('The Fail',this)">The Fail</button><button class="fchip" onclick="filt('The Hack',this)">The Hack</button><button class="fchip" onclick="filt('Educational',this)">Educational</button></div>
+<div class="grid">
+  
+  
+      <div class="scard" data-format="The Fail" onclick="openModal('1779339921')">
+        <div class="scard-meta">
+          <span class="scard-date">2026-05-21 <span class="scard-dur">48s</span></span>
+          <a href="https://www.tiktok.com/@careerwithsarah/video/7592105644161830157?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="scard-ref" onclick="event.stopPropagation()">▶ Reference</a>
+        </div>
+        <div class="scard-title"><span class="scard-num">#5</span> Why You're Not Getting Job Interviews</div>
+        <a class="scard-music" href="https://www.tiktok.com/search?q=original%20sound%20careerwithsarah" target="_blank" onclick="event.stopPropagation()">♪ original sound — careerwithsarah</a>
+        <div class="scard-tags"><span class="chip" style="background:#fff7ed;color:#c2410c">The Fail</span><span class="chip" style="background:#dbeafe;color:#1d4ed8">Smart Autofill</span></div>
+        <div class="scard-hook">"But sure, you can explain to your parents that the only way to get a job in 2026 is to just manually fill out the same application form a h</div>
+        <div class="scard-cta">View Script →</div>
+      </div>
+      <div class="scard" data-format="The Hack" onclick="openModal('1779337064')">
+        <div class="scard-meta">
+          <span class="scard-date">2026-05-21 <span class="scard-dur">17s</span></span>
+          <a href="https://www.tiktok.com/@careerwithsarah/video/7575267000725900599?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="scard-ref" onclick="event.stopPropagation()">▶ Reference</a>
+        </div>
+        <div class="scard-title"><span class="scard-num">#4</span> Why LinkedIn and Indeed Waste Your Time</div>
+        <a class="scard-music" href="https://www.tiktok.com/search?q=original%20sound%20careerwithsarah" target="_blank" onclick="event.stopPropagation()">♪ original sound — careerwithsarah</a>
+        <div class="scard-tags"><span class="chip" style="background:#fef9c3;color:#a16207">The Hack</span><span class="chip" style="background:#dbeafe;color:#1d4ed8">Smart Autofill</span></div>
+        <div class="scard-hook">Just a friendly reminder that spending 20 minutes manually filling out the same job application form — over and over — is a complete waste o</div>
+        <div class="scard-cta">View Script →</div>
+      </div>
+      <div class="scard" data-format="The Fail" onclick="openModal('1779334351')">
+        <div class="scard-meta">
+          <span class="scard-date">2026-05-21 <span class="scard-dur">23s</span></span>
+          <a href="https://www.tiktok.com/@careerwithsarah/video/7573091265894567223?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="scard-ref" onclick="event.stopPropagation()">▶ Reference</a>
+        </div>
+        <div class="scard-title"><span class="scard-num">#3</span> Job Hunting in 2025 Feels Completely Broken</div>
+        <a class="scard-music" href="https://www.tiktok.com/search?q=Chopin%20Nocturne%20No.%202%20Piano%20Playing%20moshimo%20sound%20design" target="_blank" onclick="event.stopPropagation()">♪ Chopin Nocturne No. 2 Piano Playing — moshimo sound design</a>
+        <div class="scard-tags"><span class="chip" style="background:#fff7ed;color:#c2410c">The Fail</span><span class="chip" style="background:#dbeafe;color:#1d4ed8">Smart Autofill</span></div>
+        <div class="scard-hook">On-screen text: "applying for a job in 2015:"</div>
+        <div class="scard-cta">View Script →</div>
+      </div>
+      <div class="scard" data-format="The Fail" onclick="openModal('1779265647')">
+        <div class="scard-meta">
+          <span class="scard-date">2026-05-20 <span class="scard-dur">8s</span></span>
+          <a href="https://www.tiktok.com/@careerwithsarah/video/7570884509965536526?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="scard-ref" onclick="event.stopPropagation()">▶ Reference</a>
+        </div>
+        <div class="scard-title"><span class="scard-num">#2</span> One Offer Hidden Among 500 Rejections</div>
+        <a class="scard-music" href="https://www.tiktok.com/search?q=origineel%20geluid%20%F0%9D%97%A6%F0%9D%97%A3%F0%9D%97%98%F0%9D%97%97%F0%9D%97%96%F0%9D%97%A9%F0%9D%97%A6%F0%9D%97%A0%F0%9D%97%9C%F0%9D%97%96%F0%9D%97%A6%C2%AE" target="_blank" onclick="event.stopPropagation()">♪ origineel geluid — 𝗦𝗣𝗘𝗗𝗖𝗩𝗦𝗠𝗜𝗖𝗦®</a>
+        <div class="scard-tags"><span class="chip" style="background:#fff7ed;color:#c2410c">The Fail</span><span class="chip" style="background:#dbeafe;color:#1d4ed8">Smart Autofill</span></div>
+        <div class="scard-hook">WAR IS OVER 💔😭 (applied to 500 jobs in 3 months using JobWizard — it finally happened)</div>
+        <div class="scard-cta">View Script →</div>
+      </div>
+      <div class="scard" data-format="Educational" onclick="openModal('1779265012')">
+        <div class="scard-meta">
+          <span class="scard-date">2026-05-20 </span>
+          <a href="https://www.tiktok.com/@careerwithsarah/video/7570348803841084727?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="scard-ref" onclick="event.stopPropagation()">▶ Reference</a>
+        </div>
+        <div class="scard-title"><span class="scard-num">#1</span> Real Job Search Stats Nobody Tells You</div>
+        
+        <div class="scard-tags"><span class="chip" style="background:#f3f4f6;color:#374151">Educational</span><span class="chip" style="background:#f3f4f6;color:#374151">Listicle</span><span class="chip" style="background:#dbeafe;color:#1d4ed8">Smart Autofill</span></div>
+        <div class="scard-hook">"So I applied to 500 jobs in two weeks this spring — and this is exactly how it went."</div>
+        <div class="scard-cta">View Script →</div>
+      </div>
+</div>
+
+    <div class="modal" id="m-1779339921">
+      <div class="modal-box">
+        <div class="modal-hdr">
+          <div>
+            <div class="modal-title">Why You're Not Getting Job Interviews</div>
+            <a href="https://www.tiktok.com/@careerwithsarah/video/7592105644161830157?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="modal-ref">▶ Watch reference video</a>
+          </div>
+          <div class="modal-actions">
+            <span class="reset-lnk" id="rl-1779339921" onclick="resetEdit('1779339921')">Reset</span>
+            <button class="edit-btn" id="eb-1779339921" onclick="toggleEdit('1779339921')">Edit</button>
+            <button class="save-btn" id="sb-1779339921" onclick="saveEdit('1779339921')">Save</button>
+            <button class="copy-btn" onclick="cpScript('1779339921')">Copy Script</button>
+            <button class="close-btn" onclick="closeModal('1779339921')">✕</button>
+          </div>
+        </div>
+        <div class="modal-body md" id="m-1779339921-md"></div>
+      </div>
+    </div>
+    <div class="modal" id="m-1779337064">
+      <div class="modal-box">
+        <div class="modal-hdr">
+          <div>
+            <div class="modal-title">Why LinkedIn and Indeed Waste Your Time</div>
+            <a href="https://www.tiktok.com/@careerwithsarah/video/7575267000725900599?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="modal-ref">▶ Watch reference video</a>
+          </div>
+          <div class="modal-actions">
+            <span class="reset-lnk" id="rl-1779337064" onclick="resetEdit('1779337064')">Reset</span>
+            <button class="edit-btn" id="eb-1779337064" onclick="toggleEdit('1779337064')">Edit</button>
+            <button class="save-btn" id="sb-1779337064" onclick="saveEdit('1779337064')">Save</button>
+            <button class="copy-btn" onclick="cpScript('1779337064')">Copy Script</button>
+            <button class="close-btn" onclick="closeModal('1779337064')">✕</button>
+          </div>
+        </div>
+        <div class="modal-body md" id="m-1779337064-md"></div>
+      </div>
+    </div>
+    <div class="modal" id="m-1779334351">
+      <div class="modal-box">
+        <div class="modal-hdr">
+          <div>
+            <div class="modal-title">Job Hunting in 2025 Feels Completely Broken</div>
+            <a href="https://www.tiktok.com/@careerwithsarah/video/7573091265894567223?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="modal-ref">▶ Watch reference video</a>
+          </div>
+          <div class="modal-actions">
+            <span class="reset-lnk" id="rl-1779334351" onclick="resetEdit('1779334351')">Reset</span>
+            <button class="edit-btn" id="eb-1779334351" onclick="toggleEdit('1779334351')">Edit</button>
+            <button class="save-btn" id="sb-1779334351" onclick="saveEdit('1779334351')">Save</button>
+            <button class="copy-btn" onclick="cpScript('1779334351')">Copy Script</button>
+            <button class="close-btn" onclick="closeModal('1779334351')">✕</button>
+          </div>
+        </div>
+        <div class="modal-body md" id="m-1779334351-md"></div>
+      </div>
+    </div>
+    <div class="modal" id="m-1779265647">
+      <div class="modal-box">
+        <div class="modal-hdr">
+          <div>
+            <div class="modal-title">One Offer Hidden Among 500 Rejections</div>
+            <a href="https://www.tiktok.com/@careerwithsarah/video/7570884509965536526?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="modal-ref">▶ Watch reference video</a>
+          </div>
+          <div class="modal-actions">
+            <span class="reset-lnk" id="rl-1779265647" onclick="resetEdit('1779265647')">Reset</span>
+            <button class="edit-btn" id="eb-1779265647" onclick="toggleEdit('1779265647')">Edit</button>
+            <button class="save-btn" id="sb-1779265647" onclick="saveEdit('1779265647')">Save</button>
+            <button class="copy-btn" onclick="cpScript('1779265647')">Copy Script</button>
+            <button class="close-btn" onclick="closeModal('1779265647')">✕</button>
+          </div>
+        </div>
+        <div class="modal-body md" id="m-1779265647-md"></div>
+      </div>
+    </div>
+    <div class="modal" id="m-1779265012">
+      <div class="modal-box">
+        <div class="modal-hdr">
+          <div>
+            <div class="modal-title">Real Job Search Stats Nobody Tells You</div>
+            <a href="https://www.tiktok.com/@careerwithsarah/video/7570348803841084727?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166" target="_blank" class="modal-ref">▶ Watch reference video</a>
+          </div>
+          <div class="modal-actions">
+            <span class="reset-lnk" id="rl-1779265012" onclick="resetEdit('1779265012')">Reset</span>
+            <button class="edit-btn" id="eb-1779265012" onclick="toggleEdit('1779265012')">Edit</button>
+            <button class="save-btn" id="sb-1779265012" onclick="saveEdit('1779265012')">Save</button>
+            <button class="copy-btn" onclick="cpScript('1779265012')">Copy Script</button>
+            <button class="close-btn" onclick="closeModal('1779265012')">✕</button>
+          </div>
+        </div>
+        <div class="modal-body md" id="m-1779265012-md"></div>
+      </div>
+    </div>
+<script>
+const S={  "1779339921": "## Hook\n\"But sure, you can explain to your parents that the only way to get a job in 2026 is to just manually fill out the same application form a hundred different times.\"\n\n**Why this hook works:** Drop-in \"But\" creates a mid-conversation information gap; \"explain to your parents\" activates Z-gen family-pressure anxiety; the sarcastic framing of the \"wrong\" method triggers the fail \u2192 reversal emotional arc before a single second of the problem is shown.\n\n---\n\n| Shot | Time | Visual / Setup | Dialogue & On-Screen Text | Camera Movement | Acting Notes |\n|------|------|----------------|--------------------------|-----------------|--------------|\n| 1 | 0:00\u20130:03 | Creator in gray hoodie, self-shot angle, looking up-left, mouth slightly open | \"But sure, you can explain to your parents that the only way to get a job in 2026 is to just manually fill out the same application form a hundred different times.\" / **On-screen text (persistent):** \"getting a job in 2026\" | Static, fixed | Exhausted and slightly sarcastic \u2014 eyes stay up-left like you're genuinely recalling a painful memory, NOT reading a script |\n| 2 | 0:03\u20130:06 | Same frame \u2014 eyes briefly close, then snap open directly into camera | \"Oh my god, I have been sitting here retyping my experience into every single company's job portal for hours.\" | Static, fixed, faint push-in feel | The eye-snap to camera is the emphasis move \u2014 exaggerated frustration that feels real, NOT performed anger |\n| 3 | 0:06\u20130:09 | Hand pushes outward, fingers splayed wide | \"Literally every company has a different form and you have to start from scratch every single time. For months.\" | Static, fixed | Big expressive hand wave \u2014 \"months\" lands flat and deadpan, not screamed |\n| 4 | 0:09\u20130:12 | Hand rests on cheek, one eye slightly squinted, head tilts | \"Honestly, the number of cover letters I've had to rewrite from scratch for every single application is insane.\" | Static, fixed | Bewildered disbelief \u2014 NOT angry; more like a person who just realized they've been doing something extremely painful for no reason |\n| 5 | 0:12\u20130:16 | Arm extends to the side, eyebrows jump up, finger points directly at camera | \"And why am I still getting ghosted?\" | Static, fixed | Full stop. Brief pause before the line. Eyes lock directly into the lens. This is the gut-punch of the entire video \u2014 do not rush it |\n| 6 | 0:16\u20130:21 | Arm relaxes back in, gaze shifts slightly off to the side, frame loosens marginally | \"Applying to jobs genuinely takes way too long. I literally called my friend and I was like \u2014 okay, what are you even doing to get through all of this?\" | Static, very slight pull-back feel | Tone drops from peak frustration to genuine curiosity. Body softens. Eyes drift off-lens like you're actually replaying the phone call in your head |\n| 7 | 0:21\u20130:31 | Rich hand gestures throughout, eyes animated, expression open and a little incredulous | \"Because it was literally taking me forever, and she was like \u2014 what, you're still doing this manually? Like, I use JobWizard. And I was like, what even is that?\" / **On-screen text:** \"JobWizard\" appears as the word is spoken | Static, fixed | This is the discovery beat. The two \"like\"s in the dialogue are intentional \u2014 do NOT clean them up. Let \"what even is that?\" land with real surprise, not scripted shock |\n| 8 | 0:31\u20130:38 | Faster gestures, body leans slightly forward, visibly more energy in face and hands | \"She told me she's been getting so many more interviews this month \u2014 she was like, install it on Chrome, put your resume in, and it just fills out the whole application for you.\" | Static, fixed | Excitement builds naturally here \u2014 this is \"I can't believe I didn't know this\" energy. Gesture speed picks up on its own |\n| 9 | 0:38\u20130:44 | Cut to screen recording \u2014 slight handheld wobble on the transition frame, then stabilizes on browser | \"It pulls all your info and fills out the entire form \u2014 your work history, your answers, everything \u2014 in like two minutes.\" | Handheld micro-shake on the cut, then static screen recording | The visual format switch resets viewer attention \u2014 this is the second hook. Keep it handheld-feeling, NOT a polished product demo |\n| 10 | 0:44\u20130:48 | Screen recording: JobWizard Chrome extension active on a real job application form \u2014 fields populating in real time, match score visible, AI cover letter panel open beside the form | \"And it writes a tailored cover letter for that specific role right there.\" | Static screen recording | Let the UI do the talking. Linger on the cover letter generating and the match score number \u2014 that's the aha moment. No rush |\n\n---\n\n## Closing CTA\n**Caption only:** Link in bio\n(No spoken CTA \u2014 match the source video's soft close; the demo is the ending)\n\n---\n\n## TikTok Caption + Hashtags\ngetting a job in 2026 is not a numbers game if you're spending 20 minutes on every form \ud83d\ude2d link in bio\n\n#jobsearch #jobhunting #jobs2026 #jobapplication #careeradvice #jobwizard #resumetips #gettingajob #interviewtips #careertok\n\n---\n\n## Shooting Notes\n- Single fixed camera throughout shots 1\u20138, self-shot at arm's length \u2014 replicate the static talking-head format exactly, no mid-shot adjustments\n- Natural side or soft front window light only \u2014 avoid ring light flatness; slight lighting imperfection reads as authenticity on TikTok\n- Gray or muted hoodie, no brand logos, minimal styling \u2014 \"this is just my life right now\" energy, not \"I am filming a TikTok\"\n- Handheld transition at shot 9: physically pick up the phone, let the natural wobble happen, then set it down in front of the screen \u2014 recreates the visual gear-shift that resets viewer attention\n- Screen recording (shots 9\u201310): high resolution but framed within the browser window, not full-screen \u2014 JobWizard panel clearly visible, no post-zoom needed; briefly hold on the match score and the cover letter generating\n- Do NOT clean up the verbal \"like, like, literally\" pattern in shots 6\u20138 \u2014 the messiness is the credibility signal\n- Eyes off-camera (up-left or side) during recall moments; eyes direct to lens during emotional peaks (shots 2 and 5 especially) \u2014 this alternation is the trust-building visual rhythm\n- Audio: something with low-energy acoustic or lo-fi energy similar to \"original sound \u2014 careerwithsarah\" \u2014 intimate, not hype\n\n---",  "1779337064": "## Hook\nJust a friendly reminder that spending 20 minutes manually filling out the same job application form \u2014 over and over \u2014 is a complete waste of time.\n\n**Why this hook works:** \"Friendly reminder\" sarcasm + named time-cost (20 minutes) activates collective job-seeker fatigue and FOMO, forcing viewers to stay for the \"right answer\"\n\n---\n\n| Shot | Time | Visual / Setup | Dialogue & On-Screen Text | Camera Movement | Acting Notes |\n|------|------|----------------|--------------------------|-----------------|--------------|\n| 1 | 00:00\u201300:02 | Creator selfie, casual top, window-blinds background | Dialogue: \"Just a friendly reminder that spending 20 minutes filling out every job application by hand\u2014\" / On-screen text (top, persists full video): \"friendly reminder for those still typing every application from scratch \ud83e\udee4\u203c\ufe0f\" | Static, slight natural head movement | Calm, confident, dry \u2014 NOT eye-rolling or dramatic; the \"knowing look\" does the work |\n| 2 | 00:02\u201300:05 | Screen recording of a Workday application \u2014 long wall of blank fields, slowly scrolling down | Voiceover continues: \"\u2014is a complete waste of time.\" | Static screen, slow downward scroll | No commentary, no reaction \u2014 let the endless form scroll create the fatigue feeling |\n| 3 | 00:06\u201300:08 | Creator back on camera, small natural smile | \"You guys, look at what my friend just showed me\" | Static, slight push in | Gossip-share energy, low-key excited \u2014 NOT an \"OMG\" overreaction; keep it casual |\n| 4 | 00:08\u201300:11 | Hand-held phone showing the JobWizard Chrome extension loaded on a job application page | \"This Chrome extension \u2014 it's called JobWizard \u2014 and all you do is click one button\" | Hand-held, slight natural wrist shake, pulls back slightly during \"all you do is\" | Effortless, relaxed \u2014 stress \"one button\" vocally to reinforce low barrier |\n| 5 | 00:11\u201300:13 | Screen recording of JobWizard autofill activating \u2014 cursor hits the button | \"And every time I click Autofill\" | Static screen, finger/cursor enters frame | Pace picks up, lean in slightly |\n| 6 | 00:13\u201300:15 | Form fields rapidly populating \u2014 name, work history, all of it \u2014 plus a tailored cover letter appearing in the cover letter box | \"it writes a custom cover letter and fills out the whole form for you\" | Jump cut, slight motion blur on transition | High energy, information-dense \u2014 let the animation carry the shot, no explanation needed |\n| 7 | 00:15\u201300:17 | JobWizard UI showing a completed, ready-to-submit application for a recognizable company role (Google, Salesforce, etc.) with a 91% match score visible | \"in about two minutes\" | Static, hand partially in frame | Surprised-satisfied \u2014 hold the frame; let the screen make the argument silently |\n\n---\n\n## Closing CTA\n*(No spoken CTA \u2014 source video ends on a natural visual close with no verbal line. \"Link in bio\" in caption only.)*\n\n---\n\n## TikTok Caption + Hashtags\nfriendly reminder your job apps are taking 10x longer than they need to \ud83e\udee4 link in bio\n`#jobsearch #careertok #jobhunting #jobapplication #resumetips #careeradvice #jobtips #jobseeker #aijobs #jobwizard`\n\n---\n\n## Shooting Notes\n- Shots 1 & 3: Film against a window with natural-light blinds \u2014 same warm, lived-in look as source; kills the \"studio ad\" feel instantly\n- Shot 2: Use a real Workday or Greenhouse screen recording, not a mock-up \u2014 authentic UI is the credibility; slow the scroll to make the pain feel long\n- Shot 4: Natural hand shake is good; the 10\u201315% pull-back during \"all you do is\" mirrors the source's hand-held reveal beat exactly\n- Shots 5\u20136: Screen-record live JobWizard autofill, speed up to 2\u20133x, then hard-cut with motion blur between shots 5 and 6 \u2014 copies the source's jump-cut energy burst\n- Shot 7: Freeze on the completed form with match score legible for a full beat \u2014 a recognizable company name or high match percentage is the silent payoff; this is your \"$132k RTX card\" moment\n\n---",  "1779334351": "---\n\n## Hook\n\n**On-screen text:** \"applying for a job in 2015:\"\n\n**Why this hook works:** Time-anchor contrast \u2014 \"2015\" forces an instant prediction (\"2026 is coming\") that locks in watch-through to collect the payoff.\n\n---\n\n| Shot | Time | Visual / Setup | Dialogue & On-Screen Text | Camera Movement | Acting Notes |\n|------|------|----------------|--------------------------|-----------------|--------------|\n| 1 | 00:00\u201300:02 | Creator at laptop, warm lived-in setup \u2014 bookshelf, cold coffee, printed resume in background | **On-screen text:** \"applying for a job in 2015:\" \u2014 no dialogue | Static, locked off | Neutral, slightly wistful. No performance needed \u2014 let the text land |\n| 2 | 00:02\u201300:05 | Same frame, one hand reaches casually toward camera, relaxed expression | \"Okay, that's my fifth application done.\" | Handheld, slight natural shake | Breezy, almost smug. \"Five is practically a lot\" energy. Keep it light \u2014 this is the good old days |\n| 3 | 00:05\u201300:08 | Creator stands and walks away from desk, camera drifts left, doorframe edges in | \"We're happy to inform you\u2014\" | Horizontal pan following the movement, slightly late | Rising tension, pace picks up. Mid-sentence hard cut |\n| 4 | 00:08\u201300:10 | Creator turns back toward camera, completely flat expression, looks directly at lens | \"You start Monday.\" | Slow push-in to close-up | **Deadpan. Zero emotion.** Read it like a grocery receipt. The joke lives in NOT reacting \u2014 do NOT smile or raise eyebrows |\n| 5 | 00:10\u201300:13 | Creator leans forward, mouth drops open, genuine flash of disbelief and joy | \"Oh my god. I think I just got a job.\" | Static, slight organic shake | Real reaction \u2014 let it breathe. The contrast with Shot 4 IS the punchline |\n| 6 | 00:13\u201300:15 | Hard cut back to creator at laptop, frame slightly wider than Shot 1 | **On-screen text switches to:** \"applying for a job in 2026:\" \u2014 no dialogue | Static, locked off | Full emotional stop. Blank face. Let the year do the damage |\n| 7 | 00:14\u201300:16 | Same frame, creator looks at camera with a tired, faint smile | \"application 743.\" | Static, locked off | The bitter smile \u2014 not sad, not happy, just resigned. \"I know this is insane but here we are.\" Do NOT play it for laughs |\n| 8 | 00:16\u201300:20 | Creator's gaze drifts slightly off-axis, casual, low energy | \"I've literally been using JobWizard to fill these out for months\u2014\" | Slight pull-back | Self-aware exhaustion. Micro-pause before \"literally.\" This must NOT sound like an ad pivot \u2014 it's a complaint |\n| 9 | 00:20\u201300:22 | Cut to laptop screen: a job application form with fields mid-autofill, resume details populating in real time, personal items visible in background | \"\u2014for months.\" | Handheld, slight pull-back | B-roll only. Let the screen prove it. Background should look real \u2014 not staged, not clean |\n| 10 | 00:22\u201300:23 | Back to creator, hand raised slowly to cheek, head tilts back, slight brow furrow | \"How long is this gonna take.\" | Static, gentle push-in to close-up | Pantomime waiting face. Statement, not a question \u2014 deliver it flat. Hold the pose. This is the freeze frame |\n\n---\n\n## Closing CTA\n\n*(Source video ends on pantomime expression with no verbal CTA \u2014 match that exactly. Caption only.)*\n\n---\n\n## TikTok Caption + Hashtags\n\napplying in 2015 vs applying in 2026 is not the same sport \ud83d\udc80 link in bio\n\n`#jobsearch #jobseeker #2026jobs #applicationseason #jobwizard #careeradvice #jobtips #fyp`\n\n---\n\n## Shooting Notes\n\n- Lock off the tripod for all desk shots \u2014 the 2015/2026 contrast only works if both setups look nearly identical. The slight frame widening in Shot 6 is intentional and subliminal.\n- Shot 3's pan should feel like the camera is *trying* to follow the creator, not a deliberate cinematic move \u2014 keep it loose and a half-beat late.\n- Shot 4 push-in: slow digital zoom or lens pull, 1\u20132 seconds, barely perceptible. The effect should be felt, not seen.\n- Shot 9 (B-roll): record your screen while JobWizard is actually autofilling a real form \u2014 the cursor moving through fields, text populating automatically, is the proof of concept. Film at a slight angle through the keyboard, not a flat direct screen capture. This shot is what converts skeptics.\n- Background for all desk shots: bookshelf, printed resume, cold coffee. Avoid anything that reads \"studio.\" Background objects silently signal \"I'm a real person trying to get a job,\" not a sponsored creator.\n- Sound: Chopin Nocturne No. 2 (moshimo sound design) or any solo piano with a bittersweet register. The music should feel slightly too pretty for how depleted the creator looks \u2014 that gap is part of the joke.\n\n---",  "1779265647": "# One Offer Hidden Among 500 Rejections \u2014 JobWizard Script\n\nSource: https://www.tiktok.com/@careerwithsarah/video/7570884509965536526?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166\n\n## Hook\n\n**WAR IS OVER \ud83d\udc94\ud83d\ude2d (applied to 500 jobs in 3 months using JobWizard \u2014 it finally happened)**\n\n**Why this hook works:** Same war/journey metaphor as the source video \u2014 declares the end of a long painful journey. Emotion leads, product stays in the parenthetical footnote. The 500 number gives credibility; \"3 months\" adds the time weight that makes the single green cell feel earned.\n\n---\n\n| Shot | Time | Visual / Setup | Dialogue & On-Screen Text | Camera Movement | Acting Notes |\n|------|------|----------------|--------------------------|-----------------|--------------|\n| 1 | 00:00\u201300:02 | Screen recording: Notion job tracker full screen. Top rows: a few yellow \"Interviewing.\" Below: an endless sea of red \"Rejected\" filling the entire screen \u2014 you can't see the bottom. | On-screen text overlay (stays the entire video): **\"WAR IS OVER \ud83d\udc94\ud83d\ude2d (applied to 500 jobs in 3 months using JobWizard \u2014 it finally happened)\"** | Static, fixed. Slow subtle push-in begins. | No voiceover. The wall of red IS the pain. Let it sit for a full 2 seconds before anything moves. |\n| 2 | 00:02\u201300:04 | Mouse cursor drifts to one row near the top. Status dropdown opens. Cursor hovers over \"Accepted\" \u2014 holds still for 0.5\u20131 full second without clicking. | Same overlay, unchanged. | Static, fixed. Cursor movement is the only motion. | This pause is the suspense node. Do NOT rush it. That 0.5\u20131 second of stillness is what keeps eyes on screen. |\n| 3 | 00:04\u201300:07 | Click. That row turns green \u2014 \"Accepted.\" Camera slowly pushes in, drifting across the surrounding red cells, landing on the single green row glowing among the red. | Same overlay, unchanged. | Slow push-in + slight downward pan over the red, settling on the green. | End here. One green cell, surrounded by red. That contrast is the entire payoff \u2014 do not cut away before it lands. |\n\n---\n\n## Closing CTA\nNo spoken CTA. Put \"Link in bio\" in the caption only.\n\n---\n\n## TikTok Caption + Hashtags\n\n> war is over \ud83d\udc94\ud83d\ude2d 500 applications. 3 months. one offer.\n>\n> #jobsearch #jobhunting #careertok #jobseeker #careeradvice #jobwizard #gettingthejob #offerseason\n\n---\n\n## Shooting Notes\n- **The red-to-green ratio must be extreme** \u2014 at minimum 8:1 red to green. The compression of failure makes the single green cell land harder. If your tracker doesn't have enough rejections, scroll so the screen is full of red before the click\n- **The cursor hover in Shot 2 must be a deliberate, visible pause** \u2014 this is the suspense node from the source video's dropdown moment. Do not edit it out thinking it's dead air. It is the hook\n- **No face, no voiceover needed** \u2014 text overlay carries the entire narrative. Background music handles the emotional energy (aim for something that builds quietly \u2014 original video used a sped-up track)\n- **Do not show anything after the green cell appears** \u2014 no celebration, no scrolling up, no reveal of the full tracker stats. The single green surrounded by red IS the ending\n- **Notion or any visual tracker works** \u2014 Airtable, Google Sheets, even a custom spreadsheet. What matters is the color contrast: red = rejected, green = accepted\n\n---",  "1779265012": "# Real Job Search Stats Nobody Tells You \u2014 JobWizard Script\n\nSource: https://www.tiktok.com/@careerwithsarah/video/7570348803841084727?is_from_webapp=1&sender_device=pc&web_id=7605143640650139166\n\n## Hook\n\n*\"So I applied to 500 jobs in two weeks this spring \u2014 and this is exactly how it went.\"*\n\n**Why this hook works:** Same structure as the source video \u2014 extreme number + \"here's how it went\" suspense closer. 500 jobs in two weeks sounds impossible, which forces the viewer to stay and find out how.\n\n---\n\n| Shot | Time | Visual / Setup | Dialogue & On-Screen Text | Camera Movement | Acting Notes |\n|------|------|----------------|--------------------------|-----------------|--------------|\n| 1 | 00:00\u201300:04 | Creator face-on, large \"500\" appears on screen left | *\"So I applied to 500 jobs in two weeks this spring \u2014 and this is exactly how it went.\"* / On-screen: **500 applications** | Static, subtle push-in | Calm, matter-of-fact. Like telling a friend something over coffee. Zero hype, zero sadness. |\n| 2 | 00:04\u201300:09 | Two dark bars animate downward | *\"Got ghosted by 310 of them. Rejected by another 140.\"* / On-screen: **310 ghosted \u00b7 140 rejected** | Slight pull-back | Light smile on \"ghosted\" \u2014 the calm \"I lived through it\" tone. Do NOT look defeated or dramatic. |\n| 3 | 00:09\u201300:12 | Sankey flow chart appears, teal node lights up | *\"But I still got 50 interviews \u2014 which honestly, I'll take.\"* / On-screen: **50 interviews** | Static fixed | Small laugh. Pause 0.5s after \"50\" \u2014 let the number land before moving on. |\n| 4 | 00:12\u201300:15 | Creator smiles, chart holds | *\"Shout out to JobWizard, by the way.\"* / On-screen: **JobWizard** | Static fixed | One casual sentence \u2014 say it and keep going immediately. No explanation, no pivot. Like dropping a name. |\n| 5 | 00:15\u201300:21 | Creator gestures, Sankey branches split further | *\"Got 20 second rounds. A few thirds. Ended up with 7 final round interviews.\"* / On-screen: **20 \u2192 2nd round \u00b7 7 \u2192 final** | Static fixed | Pause 0.5s after each number. Low-key hand gestures. |\n| 6 | 00:21\u201300:27 | Orange end node lights up on chart | *\"And I got two offers. Took one, turned down the other.\"* / On-screen: **2 offers \u2713** | Static fixed | Quiet smile \u2014 satisfied, not celebrating. Deliver it like it's the most normal thing. |\n| 7 | 00:27\u201300:31 | Creator looks at camera | *\"People keep asking how I applied to that many jobs in two weeks.\"* | Static fixed | Natural, conversational. Like replying to comments. |\n| 8 | 00:31\u201300:39 | Phone screen recording: JobWizard extension open on a real job listing, form fields auto-filling in real time | *\"It's a Chrome extension \u2014 JobWizard. You open a job, it fills out the whole form for you. What used to take 20 minutes takes about 2. So yeah, 200 applications in a day is actually doable.\"* / On-screen: **Autofilling\u2026 \u2713** | Screen recording, slight scroll | Same casual tone throughout. Narrate it like you're showing a friend your phone \u2014 not presenting a product demo. |\n| 9 | 00:39\u201300:43 | Screen recording continues: cover letter preview generates | *\"It also writes a tailored cover letter for every single job \u2014 reads the actual job description.\"* / On-screen: **Cover letter generated \u2713** | Static screen recording | One sentence, keep moving. Don't oversell it. |\n| 10 | 00:43\u201300:46 | Back to creator face, relaxed | *\"Honestly made the whole thing so much less painful.\"* | Static fixed | Same soft landing as the source video. No CTA, no pitch. Just the conclusion. Let curiosity do the work. |\n\n---\n\n## Closing CTA\nNo spoken CTA \u2014 soft close only (\"Honestly made the whole thing so much less painful.\"). Put \"Link in bio\" in the caption only.\n\n---\n\n## TikTok Caption + Hashtags\n\n> applied to 500 jobs in two weeks this spring and here's the full breakdown \ud83d\ude2d the ghosting numbers are unreal\n>\n> #jobsearch #jobhunting #careertok #jobseeker #interviewtips #careeradvice #jobwizard #jobapplication #resume\n\n---\n\n## Shooting Notes\n- **Sankey / funnel animation is non-negotiable** \u2014 the data visualization drives completion rate. Each number must appear as a separate reveal, not all at once. Use Motion, Jitter, or Canva animation\n- **\"Shout out to JobWizard\" is one sentence at ~12s** \u2014 say it and immediately continue to the next number. Don't stop to explain the product. Same move the source video makes\n- **0.5s pause after every key number** \u2014 forces the viewer's brain to process and \"do the math,\" which increases engagement and completion rate\n- **The \"200 applications in a day\" line (Shot 8) is the payoff** \u2014 this is where the opening \"500 in two weeks\" mystery gets answered. Let that line land clearly\n- **Screen recording must use the real JobWizard UI** on an actual job listing. No mockups. North American audiences spot staged screens immediately\n- **Tone is \"chill person explaining something that worked\"** throughout \u2014 if you sound sad about the ghosting OR excited about the product, reshoot that shot\n\n---"};
+const COPY_LBL="Copy Script",COPIED_LBL="Copied ✓";
+const EDIT_LBL="Edit",CANCEL_LBL="Cancel",SAVE_LBL="Save",SAVED_LBL="Saved ✓";
+const RESET_LBL="Reset";
+const edits={};
+const LS_KEY="jw_edits_en";
+try{const s=localStorage.getItem(LS_KEY);if(s)Object.assign(edits,JSON.parse(s));}catch(e){}
+document.addEventListener("DOMContentLoaded",()=>{
+  for(const[id,md] of Object.entries(S)){
+    const el=document.getElementById("m-"+id+"-md");
+    if(el) el.innerHTML=edits[id]||marked.parse(md);
+    if(edits[id]){
+      const rl=document.getElementById("rl-"+id);
+      if(rl) rl.style.display="inline";
+    }
+  }
+});
+function filt(f,btn){
+  document.querySelectorAll(".fchip").forEach(c=>c.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".scard").forEach(c=>{
+    c.style.display=(f==="all"||c.dataset.format===f)?"":"none";
+  });
+}
+function openModal(id){
+  document.getElementById("m-"+id).classList.add("open");
+  document.body.style.overflow="hidden";
+}
+function closeModal(id){
+  const eb=document.getElementById("eb-"+id);
+  if(eb&&eb.classList.contains("active")){
+    const body=document.getElementById("m-"+id+"-md");
+    body.innerHTML=edits[id]||marked.parse(S[id]);
+    body.contentEditable="false";
+    body.classList.remove("md-editing");
+    eb.classList.remove("active");
+    eb.textContent=EDIT_LBL;
+    document.getElementById("sb-"+id).style.display="none";
+  }
+  document.getElementById("m-"+id).classList.remove("open");
+  document.body.style.overflow="";
+}
+function toggleEdit(id){
+  const body=document.getElementById("m-"+id+"-md");
+  const eb=document.getElementById("eb-"+id);
+  const sb=document.getElementById("sb-"+id);
+  if(!eb.classList.contains("active")){
+    body.contentEditable="true";
+    body.classList.add("md-editing");
+    body.focus();
+    eb.classList.add("active");
+    eb.textContent=CANCEL_LBL;
+    sb.style.display="inline-block";
+  }else{
+    body.innerHTML=edits[id]||marked.parse(S[id]);
+    body.contentEditable="false";
+    body.classList.remove("md-editing");
+    eb.classList.remove("active");
+    eb.textContent=EDIT_LBL;
+    sb.style.display="none";
+  }
+}
+function saveEdit(id){
+  const body=document.getElementById("m-"+id+"-md");
+  edits[id]=body.innerHTML;
+  try{localStorage.setItem(LS_KEY,JSON.stringify(edits));}catch(e){}
+  body.contentEditable="false";
+  body.classList.remove("md-editing");
+  const eb=document.getElementById("eb-"+id);
+  const sb=document.getElementById("sb-"+id);
+  const rl=document.getElementById("rl-"+id);
+  eb.classList.remove("active");
+  eb.textContent=EDIT_LBL;
+  sb.style.display="none";
+  if(rl) rl.style.display="inline";
+  const savedMsg=document.createElement("span");
+  savedMsg.style.cssText="font-size:12px;color:#16a34a;margin-right:4px";
+  savedMsg.textContent=SAVED_LBL;
+  eb.parentNode.insertBefore(savedMsg,eb);
+  setTimeout(()=>savedMsg.remove(),2000);
+}
+function resetEdit(id){
+  delete edits[id];
+  try{localStorage.setItem(LS_KEY,JSON.stringify(edits));}catch(e){}
+  const body=document.getElementById("m-"+id+"-md");
+  body.innerHTML=marked.parse(S[id]);
+  body.contentEditable="false";
+  body.classList.remove("md-editing");
+  const rl=document.getElementById("rl-"+id);
+  if(rl) rl.style.display="none";
+  const eb=document.getElementById("eb-"+id);
+  if(eb&&eb.classList.contains("active")){
+    eb.classList.remove("active");
+    eb.textContent=EDIT_LBL;
+    document.getElementById("sb-"+id).style.display="none";
+  }
+}
+function mdToRich(md){
+  const sep=/^[|][\s|:\-]+[|]?\s*$/;
+  let html="",tsv="",inTable=false,firstRow=true;
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const plain=s=>s.replace(/[*][*]?([^*]+)[*][*]?/g,"$1").replace(/`([^`]+)`/g,"$1").replace(/^[#]+ */,"").trim();
+  md.split("\n").forEach(line=>{
+    const t=line.trim();
+    if(sep.test(t)) return;
+    if(t.startsWith("|")){
+      const cells=t.replace(/^[|]|[|]$/g,"").split("|").map(c=>c.trim());
+      if(!inTable){html+="<table style='border-collapse:collapse;font-family:sans-serif;font-size:13px'>";inTable=true;firstRow=true;}
+      const tag=firstRow?"th":"td";
+      const sty=firstRow?"background:#f5f5f7;font-weight:600;":"";
+      html+="<tr>"+cells.map(c=>"<"+tag+" style='border:1px solid #ddd;padding:6px 10px;vertical-align:top;"+sty+"'>"+esc(plain(c))+"</"+tag+">").join("")+"</tr>";
+      tsv+=cells.map(plain).join("\t")+"\n";
+      firstRow=false;
+    }else{
+      if(inTable){html+="</table>\n";inTable=false;}
+      const p=plain(t);
+      if(p){html+="<p style='margin:6px 0;font-family:sans-serif;font-size:13px'>"+esc(p)+"</p>";tsv+=p+"\n";}
+    }
+  });
+  if(inTable) html+="</table>";
+  return {html,tsv};
+}
+function cpScript(id){
+  const btn=document.querySelector("#m-"+id+" .copy-btn");
+  let htmlContent,textContent;
+  if(edits[id]){
+    const body=document.getElementById("m-"+id+"-md");
+    htmlContent=body.innerHTML;
+    textContent=body.innerText;
+  }else{
+    const r=mdToRich(S[id]);
+    htmlContent=r.html;textContent=r.tsv;
+  }
+  try{
+    const item=new ClipboardItem({"text/html":new Blob([htmlContent],{type:"text/html"}),"text/plain":new Blob([textContent],{type:"text/plain"})});
+    navigator.clipboard.write([item]).then(()=>{btn.textContent=COPIED_LBL;setTimeout(()=>btn.textContent=COPY_LBL,2000);});
+  }catch(e){
+    navigator.clipboard.writeText(textContent).then(()=>{btn.textContent=COPIED_LBL;setTimeout(()=>btn.textContent=COPY_LBL,2000);});
+  }
+}
+document.querySelectorAll(".modal").forEach(m=>{
+  m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id.replace("m-",""));});
+});
+</script>
+</body>
+</html>

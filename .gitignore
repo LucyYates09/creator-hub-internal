@@ -1,0 +1,20 @@
+# Video / audio downloads
+*.mp4
+*.mp3
+*.m4a
+*.wav
+*.webm
+*.ass
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Temp / output
+output/
+tmp_*
+
+# macOS
+.DS_Store
